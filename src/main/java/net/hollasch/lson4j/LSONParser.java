@@ -135,7 +135,8 @@ public class LSONParser
                 lsonObj.put(key, value);
             } else {
                 // Pop key value separator token.
-                expect(KEY_VALUE_SEPARATOR, "Expected a " + KEY_VALUE_SEPARATOR + " to separate key, value pairs");
+                expect(KEY_VALUE_SEPARATOR, "Expected a " + (char) KEY_VALUE_SEPARATOR
+                        + " to separate key, value pairs");
                 this.reader.readNext();
 
                 if (key == null) {
@@ -190,17 +191,19 @@ public class LSONParser
         removeWhitespace();
 
         // Expect a key value separator.
-        expect(KEY_VALUE_SEPARATOR, "Expected a " + KEY_VALUE_SEPARATOR + " to separate structure header and body");
+        expect(KEY_VALUE_SEPARATOR, "Expected a " + (char) KEY_VALUE_SEPARATOR
+                + " to separate structure header and body");
         this.reader.readNext();
         removeWhitespace();
 
         // Expect an array opening tag.
-        expect(LSON_ARRAY_OPENER, "Expected an " + LSON_ARRAY_OPENER + " for structure opening");
+        expect(LSON_ARRAY_OPENER, "Expected an " + (char) LSON_ARRAY_OPENER + " for structure opening");
         this.reader.readNext();
         removeWhitespace();
 
         // Expect either the opening of a structure body fragment or the end of an array (no structure components).
-        expectAny("Invalid token, expected either " + LSON_STRUCTURE_OPENER + " or " + LSON_ARRAY_CLOSER + " token",
+        expectAny("Invalid token, expected either " + (char) LSON_STRUCTURE_OPENER
+                        + " or " + (char) LSON_ARRAY_CLOSER + " token",
                 LSON_STRUCTURE_OPENER,
                 LSON_ARRAY_CLOSER);
 
@@ -280,7 +283,7 @@ public class LSONParser
 
         // Expect an array closing tag for termination. This line is just a syntax reminder as the loop will never
         // terminate if an array closing tag is not present either way.
-        expect(LSON_ARRAY_CLOSER, "Expected " + LSON_ARRAY_CLOSER + " for array terminator.");
+        expect(LSON_ARRAY_CLOSER, "Expected " + (char) LSON_ARRAY_CLOSER + " for array terminator.");
         this.reader.readNext();
 
         return array;
@@ -500,8 +503,8 @@ public class LSONParser
             }
         } else {
             // Cannot have dangling comment start token.
-            throw new LSONParseException("Expected either " + COMMENT_START + " or "
-                    + COMMENT_BLOCK_DETERMINANT + " after comment start", getLocation());
+            throw new LSONParseException("Expected either " + (char) COMMENT_START + " or "
+                    + (char) COMMENT_BLOCK_DETERMINANT + " after comment start", getLocation());
         }
     }
 }
