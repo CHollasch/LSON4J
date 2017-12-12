@@ -47,7 +47,7 @@ public class LSONTest
         doParseTest("[ ]");
         doParseTest("{ }");
         doParseTest("<a b c>:[<A B C>]");
-        doParseTest("{{}}");
+        doParseTest("{Key:Value;Key2:Value2}");
     }
 
     private static void doParseTest (final String rawData) throws IOException, LSONParseException
