@@ -323,15 +323,21 @@ public class LSONParser
                     current = captureEscapeCharacter();
                 }
 
-                // If we open a structure, our word is done parsing so we can continue to build the structure.
-                if (current == LSON_STRUCTURE_OPENER) {
-                    break;
-                }
+                if (stringOpener == NULL_BYTE) {
+                    // If this word is a key and the current token is a key value separator, break out.
+                    if (isObjectKey && current == KEY_VALUE_SEPARATOR) {
+                        break;
+                    }
 
-                // If this isn't a delimited word and there is a colon and this is a key name, break out.
-                if ((isObjectKey && current == KEY_VALUE_SEPARATOR && stringOpener == NULL_BYTE)
-                        || LSONTokenUtils.isLSONClosingReservedToken(current)) {
-                    break;
+                    // If we are closing something, break out of parsing this word.
+                    else if (LSONTokenUtils.isLSONClosingReservedToken(current)) {
+                        break;
+                    }
+
+                    // If we open a structure, our word is done parsing so we can continue to build the structure.
+                    else if (current == LSON_STRUCTURE_OPENER) {
+                        break;
+                    }
                 }
 
                 // Append current to buffer and continue.
@@ -433,6 +439,15 @@ public class LSONParser
         }
 
         throw new LSONParseException(onError, getLocation());
+    }
+
+    private void dump () throws IOException, LSONParseException
+    {
+        char c = this.reader.getCurrent();
+        while (!this.reader.isFinished()) {
+            System.out.print(c);
+            c = this.reader.readNext();
+        }
     }
 
     private void removeWhitespace () throws IOException, LSONParseException

@@ -37,7 +37,7 @@ public class LSONBenchmark
 {
     public static void main (final String... args) throws IOException, LSONParseException
     {
-        final File big = new File("1mb.json");
+        final File big = new File("warframe.json");
 
         System.out.println("Parsing a 1mb test file...");
 
