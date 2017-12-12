@@ -21,48 +21,31 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.hollasch.lson4j;
+package net.hollasch.lson4j.type;
 
-import net.hollasch.lson4j.type.provided.LSONBooleanTypeAdapter;
-import org.json.simple.parser.JSONParser;
-
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.util.Arrays;
+import java.util.Map;
 
 /**
  * @author Connor Hollasch
- * @since Dec 11, 4:18 PM
+ * @since Dec 11, 7:28 PM
  */
-public class LSONBenchmark
+public class LSONObject extends LSONValue
 {
-    public static void main (final String... args) throws IOException, LSONParseException
+    private final Map<LSONString, LSONValue> map;
+
+    public LSONObject (final Map<LSONString, LSONValue> map)
     {
-        final File big = new File("warframe.json");
-
-        System.out.println("Parsing a 1mb test file...");
-
-        timeParser("LSON4J", () -> new LSONParser(new LSONReader(new FileReader(big)), Arrays.asList(new LSONBooleanTypeAdapter())).parse());
-        timeParser("JSON-Simple", () -> new JSONParser().parse(new FileReader(big)));
+        this.map = map;
     }
 
-    private static void timeParser (final String name, final RunnableThrowall runnable)
+    public Map<LSONString, LSONValue> toHashMap ()
     {
-        final long start = System.currentTimeMillis();
-
-        try {
-            runnable.run();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        final long end = System.currentTimeMillis() - start;
-        System.out.println(name + " took " + end + " milliseconds...");
+        return this.map;
     }
 
-    private interface RunnableThrowall
+    @Override
+    public String toString ()
     {
-        void run () throws Exception;
+        return toHashMap().toString();
     }
 }

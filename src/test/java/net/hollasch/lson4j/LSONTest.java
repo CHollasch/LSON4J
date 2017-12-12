@@ -23,13 +23,13 @@
 
 package net.hollasch.lson4j;
 
-import java.io.BufferedReader;
+import net.hollasch.lson4j.type.provided.LSONBooleanTypeAdapter;
+
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.StringReader;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Arrays;
 
 /**
  * @author Connor Hollasch
@@ -37,8 +37,6 @@ import java.nio.file.Paths;
  */
 public class LSONTest
 {
-    private static final String test2 = "{collection<value,isPositive>:[<-1.5;false><0><2.4;true,,,,red,,,,,,,,null>]}";
-
     private static int testIndex = 0;
 
     public static void main (final String... args) throws IOException, LSONParseException
@@ -54,17 +52,17 @@ public class LSONTest
         doParseTest("<a b c>:[<A B C>]");
         doParseTest("{Key:Value;Key2:Value2}");
         doParseTest("{Key:\"Value Line 1\"\n + \" \" + \"Value Line 2\"}");
-        doParseTest(new String(Files.readAllBytes(Paths.get("warframe.json"))));
+        doParseTest("{\"true\":true}");
     }
 
     private static void doParseTest (final String rawData) throws IOException, LSONParseException
     {
         final String header = "============= Test #" + (++LSONTest.testIndex) + " =============";
         System.out.println(header);
-        //System.out.println("Raw data: " + rawData);
+        System.out.println("Raw data: " + rawData);
 
         LSONReader read = new LSONReader(new StringReader(rawData));
-        LSONParser parser = new LSONParser(read);
+        LSONParser parser = new LSONParser(read, Arrays.asList(new LSONBooleanTypeAdapter()));
 
         System.out.println("Parses into: " + parser.parse());
 

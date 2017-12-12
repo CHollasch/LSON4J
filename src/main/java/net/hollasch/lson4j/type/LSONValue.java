@@ -21,38 +21,13 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.hollasch.lson4j.type.provided;
 
-import net.hollasch.lson4j.type.LSONTypeAdapter;
+package net.hollasch.lson4j.type;
 
 /**
  * @author Connor Hollasch
- * @since Dec 09, 1:11 AM
+ * @since Dec 11, 7:27 PM
  */
-public class LSONBooleanTypeAdapter implements LSONTypeAdapter<Boolean>
+public class LSONValue
 {
-    @Override
-    public Boolean buildFromWord (final String value)
-    {
-        if (value.length() == 0) {
-            return null;
-        }
-
-        return value.charAt(0) == 't' ? Boolean.TRUE : Boolean.FALSE;
-    }
-
-    @Override
-    public boolean willAdaptFor (final String word)
-    {
-        if (word.length() == 0) {
-            return false;
-        }
-
-        final char first = word.charAt(0);
-        if (first == 't' || first == 'f') {
-            return word.equals("true") || word.equals("false");
-        }
-
-        return false;
-    }
 }

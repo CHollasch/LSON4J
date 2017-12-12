@@ -21,48 +21,36 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.hollasch.lson4j;
-
-import net.hollasch.lson4j.type.provided.LSONBooleanTypeAdapter;
-import org.json.simple.parser.JSONParser;
-
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.util.Arrays;
+package net.hollasch.lson4j.type;
 
 /**
  * @author Connor Hollasch
- * @since Dec 11, 4:18 PM
+ * @since Dec 11, 7:28 PM
  */
-public class LSONBenchmark
+public class LSONWord extends LSONValue
 {
-    public static void main (final String... args) throws IOException, LSONParseException
+    private String word;
+    private Object object;
+
+    public LSONWord (final String word, final Object object)
     {
-        final File big = new File("warframe.json");
-
-        System.out.println("Parsing a 1mb test file...");
-
-        timeParser("LSON4J", () -> new LSONParser(new LSONReader(new FileReader(big)), Arrays.asList(new LSONBooleanTypeAdapter())).parse());
-        timeParser("JSON-Simple", () -> new JSONParser().parse(new FileReader(big)));
+        this.word = word;
+        this.object = object;
     }
 
-    private static void timeParser (final String name, final RunnableThrowall runnable)
+    public String getWord ()
     {
-        final long start = System.currentTimeMillis();
-
-        try {
-            runnable.run();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        final long end = System.currentTimeMillis() - start;
-        System.out.println(name + " took " + end + " milliseconds...");
+        return this.word;
     }
 
-    private interface RunnableThrowall
+    public Object getObject ()
     {
-        void run () throws Exception;
+        return this.object;
+    }
+
+    @Override
+    public String toString ()
+    {
+        return getObject().toString();
     }
 }

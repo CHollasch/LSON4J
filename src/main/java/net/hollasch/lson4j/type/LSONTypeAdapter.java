@@ -29,5 +29,7 @@ package net.hollasch.lson4j.type;
  */
 public interface LSONTypeAdapter<T>
 {
-    T buildFromString(final String value);
+    T buildFromWord (final String value);
+
+    boolean willAdaptFor (final String word);
 }

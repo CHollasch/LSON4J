@@ -21,48 +21,58 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.hollasch.lson4j;
+package net.hollasch.lson4j.type;
 
-import net.hollasch.lson4j.type.provided.LSONBooleanTypeAdapter;
-import org.json.simple.parser.JSONParser;
-
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.Iterator;
 
 /**
  * @author Connor Hollasch
- * @since Dec 11, 4:18 PM
+ * @since Dec 11, 7:28 PM
  */
-public class LSONBenchmark
+public class LSONArray extends LSONValue implements Iterable<LSONValue>
 {
-    public static void main (final String... args) throws IOException, LSONParseException
+    private final ArrayList<LSONValue> array;
+
+    public LSONArray (final ArrayList<LSONValue> array)
     {
-        final File big = new File("warframe.json");
-
-        System.out.println("Parsing a 1mb test file...");
-
-        timeParser("LSON4J", () -> new LSONParser(new LSONReader(new FileReader(big)), Arrays.asList(new LSONBooleanTypeAdapter())).parse());
-        timeParser("JSON-Simple", () -> new JSONParser().parse(new FileReader(big)));
+        this.array = array;
     }
 
-    private static void timeParser (final String name, final RunnableThrowall runnable)
+    public LSONValue get (final int index)
     {
-        final long start = System.currentTimeMillis();
-
-        try {
-            runnable.run();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        final long end = System.currentTimeMillis() - start;
-        System.out.println(name + " took " + end + " milliseconds...");
+        return this.array.get(index);
     }
 
-    private interface RunnableThrowall
+    public LSONValue set (final int index, final LSONValue value)
     {
-        void run () throws Exception;
+        return this.array.set(index, value);
+    }
+
+    public int size ()
+    {
+        return this.array.size();
+    }
+
+    public boolean isEmpty ()
+    {
+        return this.array.isEmpty();
+    }
+
+    public ArrayList<LSONValue> toArrayList ()
+    {
+        return this.array;
+    }
+
+    @Override
+    public Iterator<LSONValue> iterator ()
+    {
+        return this.array.iterator();
+    }
+
+    @Override
+    public String toString ()
+    {
+        return toArrayList().toString();
     }
 }
