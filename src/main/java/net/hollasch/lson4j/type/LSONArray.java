@@ -30,21 +30,21 @@ import java.util.Iterator;
  * @author Connor Hollasch
  * @since Dec 11, 7:28 PM
  */
-public class LSONArray extends LSONValue implements Iterable<LSONValue>
+public class LSONArray<T extends LSONValue> extends LSONValue implements Iterable<T>
 {
-    private final ArrayList<LSONValue> array;
+    private final ArrayList<T> array;
 
-    public LSONArray (final ArrayList<LSONValue> array)
+    public LSONArray (final ArrayList<T> array)
     {
         this.array = array;
     }
 
-    public LSONValue get (final int index)
+    public T get (final int index)
     {
         return this.array.get(index);
     }
 
-    public LSONValue set (final int index, final LSONValue value)
+    public T set (final int index, final T value)
     {
         return this.array.set(index, value);
     }
@@ -65,13 +65,13 @@ public class LSONArray extends LSONValue implements Iterable<LSONValue>
         return true;
     }
 
-    public ArrayList<LSONValue> toArrayList ()
+    public ArrayList<T> toArrayList ()
     {
         return this.array;
     }
 
     @Override
-    public Iterator<LSONValue> iterator ()
+    public Iterator<T> iterator ()
     {
         return this.array.iterator();
     }

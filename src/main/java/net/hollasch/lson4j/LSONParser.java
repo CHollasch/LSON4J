@@ -176,11 +176,11 @@ public class LSONParser
         return new LSONObject(lsonObj);
     }
 
-    private LSONArray readStructure () throws IOException, LSONParseException
+    private LSONStructure readStructure () throws IOException, LSONParseException
     {
         // Pop structure opening character.
         this.reader.readNext();
-        final ArrayList<LSONValue> structure = new ArrayList<>();
+        final ArrayList<LSONObject<?>> structure = new ArrayList<>();
         removeWhitespace();
 
         // Load all of the structures keys in.
@@ -270,7 +270,7 @@ public class LSONParser
 
         // Pop structure closing character.
         this.reader.readNext();
-        return new LSONArray(structure);
+        return new LSONStructure(structure, structureKeys);
     }
 
     private LSONArray readArray () throws IOException, LSONParseException

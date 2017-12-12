@@ -23,35 +23,30 @@
 
 package net.hollasch.lson4j.type;
 
-import java.util.Map;
+import java.util.ArrayList;
 
 /**
  * @author Connor Hollasch
- * @since Dec 11, 7:28 PM
+ * @since Dec 11, 9:38 PM
  */
-public class LSONObject<V extends LSONValue> extends LSONValue
+public class LSONStructure extends LSONArray<LSONObject<?>>
 {
-    private final Map<LSONString, V> map;
+    private ArrayList<LSONString> header;
 
-    public LSONObject (final Map<LSONString, V> map)
+    public LSONStructure (final ArrayList<LSONObject<?>> bodyFragments, final ArrayList<LSONString> header)
     {
-        this.map = map;
+        super(bodyFragments);
+        this.header = header;
     }
 
-    public Map<LSONString, V> toHashMap ()
+    public ArrayList<LSONString> getHeader ()
     {
-        return this.map;
-    }
-
-    @Override
-    public boolean isLSONObject ()
-    {
-        return true;
+        return this.header;
     }
 
     @Override
     public String toString ()
     {
-        return toHashMap().toString();
+        return "<" + header.toString() + ">@" + toArrayList().toString();
     }
 }
