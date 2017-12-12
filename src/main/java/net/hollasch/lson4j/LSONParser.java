@@ -104,7 +104,7 @@ public class LSONParser
 
             // Default to reading a word in.
             default:
-                return readWord(false);
+                return readWord(false, false);
         }
     }
 
@@ -130,7 +130,7 @@ public class LSONParser
         char floating;
         do {
             // Create the key word.
-            final LSONString key = (LSONString) readWord(true);
+            final LSONString key = (LSONString) readWord(true, true);
             removeWhitespace();
 
             final LSONValue value;
@@ -188,7 +188,7 @@ public class LSONParser
         char floating;
         do {
             // Note that keys can be any value type.
-            final LSONWord word = readWord(false);
+            final LSONWord word = readWord(false, true);
 
             if (!(word instanceof LSONString)) {
                 throw new LSONParseException("Parsed word is not a string", getLocation());
@@ -304,7 +304,8 @@ public class LSONParser
         return new LSONArray(array);
     }
 
-    private LSONWord readWord (final boolean isObjectKey) throws IOException, LSONParseException
+    private LSONWord readWord (final boolean isObjectKey, final boolean forceString)
+            throws IOException, LSONParseException
     {
         // Load current character and create word capture.
         char current = this.reader.getCurrent();
@@ -333,7 +334,8 @@ public class LSONParser
                 if (this.reader.isFinished()) {
                     // Substring, as isFinished returns true after end of file has been read in.
                     // We capture the entire string minus the end of file character at the end.
-                    return buildWord(capture.substring(0, capture.length() -1), promotedToString);
+                    return buildWord(capture.substring(0, capture.length() -1), promotedToString
+                            || forceString || isObjectKey);
                 }
 
                 // Capture the escaped character.
@@ -394,7 +396,8 @@ public class LSONParser
             }
         }
 
-        return buildWord(capture.toString(), promotedToString);
+        // Build the word and return.
+        return buildWord(capture.toString(), promotedToString || forceString || isObjectKey);
     }
 
     private LSONWord buildWord (final String string, final boolean promotedToString)

@@ -23,13 +23,12 @@
 
 package net.hollasch.lson4j;
 
-import net.hollasch.lson4j.type.provided.LSONBooleanTypeAdapter;
+import net.hollasch.lson4j.type.provided.LSONTypeAdapters;
 import org.json.simple.parser.JSONParser;
 
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.Arrays;
 
 /**
  * @author Connor Hollasch
@@ -43,7 +42,7 @@ public class LSONBenchmark
 
         System.out.println("Parsing a 1mb test file...");
 
-        timeParser("LSON4J", () -> new LSONParser(new LSONReader(new FileReader(big)), Arrays.asList(new LSONBooleanTypeAdapter())).parse());
+        timeParser("LSON4J", () -> LSON.parseWithAdapters(new FileReader(big), LSONTypeAdapters.BOOLEAN, LSONTypeAdapters.NUMBER));
         timeParser("JSON-Simple", () -> new JSONParser().parse(new FileReader(big)));
     }
 

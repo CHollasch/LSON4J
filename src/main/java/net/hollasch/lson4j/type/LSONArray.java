@@ -59,6 +59,12 @@ public class LSONArray extends LSONValue implements Iterable<LSONValue>
         return this.array.isEmpty();
     }
 
+    @Override
+    public boolean isLSONArray ()
+    {
+        return true;
+    }
+
     public ArrayList<LSONValue> toArrayList ()
     {
         return this.array;

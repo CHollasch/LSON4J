@@ -49,6 +49,12 @@ public class LSONWord extends LSONValue
     }
 
     @Override
+    public boolean isLSONWord ()
+    {
+        return true;
+    }
+
+    @Override
     public String toString ()
     {
         return getObject().toString();

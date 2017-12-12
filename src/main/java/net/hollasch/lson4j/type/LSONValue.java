@@ -24,10 +24,31 @@
 
 package net.hollasch.lson4j.type;
 
+import java.io.Serializable;
+
 /**
  * @author Connor Hollasch
  * @since Dec 11, 7:27 PM
  */
-public class LSONValue
+public class LSONValue implements Serializable
 {
+    public boolean isLSONObject ()
+    {
+        return false;
+    }
+
+    public boolean isLSONArray ()
+    {
+        return false;
+    }
+
+    public boolean isLSONWord ()
+    {
+        return false;
+    }
+
+    public boolean isLSONString ()
+    {
+        return false;
+    }
 }

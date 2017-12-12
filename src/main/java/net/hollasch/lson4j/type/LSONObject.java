@@ -44,6 +44,12 @@ public class LSONObject extends LSONValue
     }
 
     @Override
+    public boolean isLSONObject ()
+    {
+        return true;
+    }
+
+    @Override
     public String toString ()
     {
         return toHashMap().toString();

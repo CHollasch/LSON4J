@@ -23,7 +23,9 @@
 
 package net.hollasch.lson4j;
 
+import net.hollasch.lson4j.type.LSONValue;
 import net.hollasch.lson4j.type.provided.LSONBooleanTypeAdapter;
+import net.hollasch.lson4j.type.provided.LSONTypeAdapters;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -53,6 +55,7 @@ public class LSONTest
         doParseTest("{Key:Value;Key2:Value2}");
         doParseTest("{Key:\"Value Line 1\"\n + \" \" + \"Value Line 2\"}");
         doParseTest("{\"true\":true}");
+        doParseTest("{numberTest:[1,1.0,.5,-12,0xFF]}");
     }
 
     private static void doParseTest (final String rawData) throws IOException, LSONParseException
@@ -61,10 +64,9 @@ public class LSONTest
         System.out.println(header);
         System.out.println("Raw data: " + rawData);
 
-        LSONReader read = new LSONReader(new StringReader(rawData));
-        LSONParser parser = new LSONParser(read, Arrays.asList(new LSONBooleanTypeAdapter()));
+        final LSONValue value = LSON.parseWithAdapters(rawData, LSONTypeAdapters.BOOLEAN, LSONTypeAdapters.NUMBER);
 
-        System.out.println("Parses into: " + parser.parse());
+        System.out.println("Parses into: " + value);
 
         final StringBuilder footer = new StringBuilder();
         for (int i = 0; i < header.length(); ++i) {

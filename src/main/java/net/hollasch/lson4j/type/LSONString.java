@@ -35,6 +35,12 @@ public class LSONString extends LSONWord
     }
 
     @Override
+    public boolean isLSONString ()
+    {
+        return true;
+    }
+
+    @Override
     public String toString ()
     {
         return "\"" + getWord() + "\"";
