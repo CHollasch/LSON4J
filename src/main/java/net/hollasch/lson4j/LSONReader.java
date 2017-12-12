@@ -60,7 +60,7 @@ public class LSONReader
         if (this.finished) {
             throw new LSONParseException(
                     "Attempted to read through end of file.",
-                    new LSONLocation(this.offset, this.line, this.column));
+                    new LSONFileLocation(this.offset, this.line, this.column));
         }
 
         if (!this.reader.ready() || (this.current == END_OF_FILE || this.current == END_OF_STRING)) {

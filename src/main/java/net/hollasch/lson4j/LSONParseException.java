@@ -30,9 +30,9 @@ package net.hollasch.lson4j;
 public class LSONParseException extends Exception
 {
     private final String reason;
-    private final LSONLocation location;
+    private final LSONFileLocation location;
 
-    public LSONParseException (final String reason, final LSONLocation location)
+    public LSONParseException (final String reason, final LSONFileLocation location)
     {
         this.reason = reason;
         this.location = location;
@@ -43,7 +43,7 @@ public class LSONParseException extends Exception
         return this.reason;
     }
 
-    public LSONLocation getLocation ()
+    public LSONFileLocation getLocation ()
     {
         return this.location;
     }

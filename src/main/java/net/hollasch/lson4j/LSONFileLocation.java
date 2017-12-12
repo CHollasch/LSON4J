@@ -27,13 +27,13 @@ package net.hollasch.lson4j;
  * @author Connor Hollasch
  * @since Dec 09, 1:42 AM
  */
-public class LSONLocation
+public class LSONFileLocation
 {
     private final int offset;
     private final int line;
     private final int column;
 
-    public LSONLocation (final int offset, final int line, final int column)
+    public LSONFileLocation (final int offset, final int line, final int column)
     {
         this.offset = offset;
         this.line = line;

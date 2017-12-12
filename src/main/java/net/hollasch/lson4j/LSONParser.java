@@ -447,9 +447,9 @@ public class LSONParser
         }
     }
 
-    private LSONLocation getLocation ()
+    private LSONFileLocation getLocation ()
     {
-        return new LSONLocation(this.reader.getOffset(), this.reader.getLine(), this.reader.getColumn());
+        return new LSONFileLocation(this.reader.getOffset(), this.reader.getLine(), this.reader.getColumn());
     }
 
     private void expect (final int character, final String onError) throws LSONParseException
