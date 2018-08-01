@@ -17,16 +17,16 @@
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
  * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
  * LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+ * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION-
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 package net.hollasch.lson4j;
 
+import net.hollasch.lson4j.util.LSONTokenUtils;
+
 import java.io.IOException;
 import java.io.Reader;
-
-import static net.hollasch.lson4j.util.LSONTokenUtils.*;
 
 /**
  * @author Connor Hollasch
@@ -34,72 +34,144 @@ import static net.hollasch.lson4j.util.LSONTokenUtils.*;
  */
 public class LSONReader
 {
+    private static final int DEFAULT_BUFFER_LENGTH = 1024;
+
     private Reader reader;
 
+    private int bufferLength;
+    private int[] buffer;
+
+    private boolean prepared;
+    private Character peeked;
+
     private char current;
-    private int offset;
+
+    private int bufferOffset;
     private int line;
     private int column;
 
     private boolean finished;
 
-    protected LSONReader (final Reader reader)
+    LSONReader (final Reader reader)
+    {
+        this(reader, DEFAULT_BUFFER_LENGTH);
+    }
+
+    LSONReader (final Reader reader, final int bufferLength)
     {
         this.reader = reader;
+        this.buffer = new int[this.bufferLength = bufferLength];
 
-        this.current = 0x0;
-        this.offset = 0;
+        this.prepared = false;
+        this.peeked = null;
+
+        this.current = (char) 0;
+
+        this.bufferOffset = -1;
         this.line = 1;
         this.column = -1;
 
         this.finished = false;
     }
 
-    public char readNext () throws IOException, LSONParseException
+    synchronized void prepare () throws IOException
     {
-        if (this.finished) {
-            throw new LSONParseException(
-                    "Attempted to read through end of file.",
-                    new LSONFileLocation(this.offset, this.line, this.column));
+        for (int i = 0; i < this.bufferLength; ++i) {
+            this.buffer[i] = this.reader.read();
         }
 
-        if (!this.reader.ready() || (this.current == END_OF_FILE || this.current == END_OF_STRING)) {
-            this.finished = true;
-        }
+        this.prepared = true;
+    }
 
-        if (isNewline(this.current)) {
-            this.line++;
-            this.column = 0;
-        }
-
-        this.current = (char) this.reader.read();
-        this.offset++;
-        this.column++;
-
+    char readNext () throws LSONParseException, IOException
+    {
+        readNext(false);
         return this.current;
     }
 
-    public boolean isFinished ()
+    char peekNext () throws LSONParseException, IOException
+    {
+        if (this.peeked != null) {
+            return this.peeked;
+        }
+
+        readNext(true);
+
+        if (this.peeked == null) {
+            return (char) 0x0;
+        }
+
+        return this.peeked;
+    }
+
+    private void readNext (final boolean peek) throws LSONParseException, IOException
+    {
+        if (!this.prepared) {
+            throw new LSONParseException("Unprepared read from LSON reader.", new LSONFileLocation(0, 0));
+        }
+
+        if (this.finished) {
+            if (peek) {
+                return;
+            }
+
+            throw new LSONParseException(
+                    "Attempted to read through input reader",
+                    new LSONFileLocation(this.line, this.column)
+            );
+        }
+
+        char value;
+        if (this.peeked == null) {
+            ++this.bufferOffset;
+
+            if (this.bufferOffset >= this.buffer.length) {
+                this.bufferOffset = 0;
+
+                for (int i = 0; i < this.bufferLength; ++i) {
+                    this.buffer[i] = this.reader.read();
+                }
+            }
+
+            value = (char) this.buffer[this.bufferOffset];
+        } else {
+            value = this.peeked;
+            this.peeked = null;
+        }
+
+        if (!peek) {
+            ++this.column;
+            if (value == '\n') {
+                ++this.line;
+                this.column = 0;
+            }
+
+            if (this.buffer[this.bufferOffset] == -1) {
+                this.finished = true;
+            }
+
+            this.current = value;
+        } else {
+            this.peeked = value;
+        }
+    }
+
+    boolean isFinished ()
     {
         return this.finished;
     }
 
-    public char getCurrent ()
+    char getCurrent ()
     {
         return this.current;
     }
 
-    public int getOffset ()
-    {
-        return this.offset;
-    }
-
-    public int getColumn ()
+    int getColumn ()
     {
         return this.column;
     }
 
-    public int getLine ()
+    int getLine ()
     {
         return this.line;
     }

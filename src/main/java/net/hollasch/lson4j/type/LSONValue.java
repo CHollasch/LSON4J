@@ -24,13 +24,15 @@
 
 package net.hollasch.lson4j.type;
 
+import net.hollasch.lson4j.type.graph.LSONGraph;
+
 import java.io.Serializable;
 
 /**
  * @author Connor Hollasch
  * @since Dec 11, 7:27 PM
  */
-public class LSONValue implements Serializable
+public abstract class LSONValue implements Serializable
 {
     public boolean isLSONObject ()
     {
@@ -38,6 +40,16 @@ public class LSONValue implements Serializable
     }
 
     public boolean isLSONArray ()
+    {
+        return false;
+    }
+
+    public boolean isTable ()
+    {
+        return false;
+    }
+
+    public boolean isGraph ()
     {
         return false;
     }
@@ -50,5 +62,40 @@ public class LSONValue implements Serializable
     public boolean isLSONString ()
     {
         return false;
+    }
+
+    public LSONObject toObject ()
+    {
+        return (LSONObject) this;
+    }
+
+    public <T extends LSONValue> LSONArray<T> toArray ()
+    {
+        return (LSONArray<T>) this;
+    }
+
+    public LSONTable toTable ()
+    {
+        return (LSONTable) this;
+    }
+
+    public LSONGraph toGraph ()
+    {
+        return (LSONGraph) this;
+    }
+
+    public LSONWord toWord ()
+    {
+        return (LSONWord) this;
+    }
+
+    public LSONString toLsonString ()
+    {
+        return (LSONString) this;
+    }
+
+    public boolean literalEquals (final Object other)
+    {
+        return super.equals(other);
     }
 }

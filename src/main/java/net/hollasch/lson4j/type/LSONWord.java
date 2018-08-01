@@ -27,12 +27,12 @@ package net.hollasch.lson4j.type;
  * @author Connor Hollasch
  * @since Dec 11, 7:28 PM
  */
-public class LSONWord extends LSONValue
+public class LSONWord<T> extends LSONValue
 {
     private String word;
-    private Object object;
+    private T object;
 
-    public LSONWord (final String word, final Object object)
+    public LSONWord (final String word, final T object)
     {
         this.word = word;
         this.object = object;
@@ -43,7 +43,7 @@ public class LSONWord extends LSONValue
         return this.word;
     }
 
-    public Object getObject ()
+    public T getObject ()
     {
         return this.object;
     }
@@ -58,5 +58,21 @@ public class LSONWord extends LSONValue
     public String toString ()
     {
         return getObject().toString();
+    }
+
+    @Override
+    public boolean equals (final Object obj)
+    {
+        if (obj == null) {
+            return false;
+        }
+
+        return obj.equals(this.object);
+    }
+
+    @Override
+    public int hashCode ()
+    {
+        return (31 * getWord().hashCode()) + (31 * getObject().hashCode());
     }
 }

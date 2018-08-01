@@ -51,6 +51,6 @@ public class LSONParseException extends Exception
     @Override
     public String getMessage ()
     {
-        return this.reason + " at line: " + this.location.getLine() + ", column: " + this.location.getColumn();
+        return this.reason + " near line: " + this.location.getLine() + ", column: " + this.location.getColumn();
     }
 }

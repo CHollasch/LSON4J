@@ -24,6 +24,9 @@
 package net.hollasch.lson4j;
 
 import net.hollasch.lson4j.type.*;
+import net.hollasch.lson4j.type.graph.LSONEdge;
+import net.hollasch.lson4j.type.graph.LSONGraph;
+import net.hollasch.lson4j.type.graph.LSONVertex;
 import net.hollasch.lson4j.util.LSONTokenUtils;
 
 import java.io.IOException;
@@ -37,21 +40,30 @@ import static net.hollasch.lson4j.util.LSONTokenUtils.*;
  */
 public class LSONParser
 {
+    // Similar to java reader, optimized to buffer reads. Reading from input reader.
     private LSONReader reader;
+
+    // Collection of scalar type adapters being used to parse words.
     private Collection<LSONTypeAdapter<?>> typeAdapters;
 
-    public LSONParser (final LSONReader reader) throws IOException, LSONParseException
-    {
-        this(reader, Collections.emptyList());
-    }
-
+    /**
+     * Creates an LSON parser given the following parameters.
+     *
+     * @param reader       {@link LSONReader} that will be used to read the input LSON string.
+     * @param typeAdapters {@link Collection} of scalar type adapters being used to parse words.
+     * @throws IOException        if the reader has a problem with IO.
+     * @throws LSONParseException if there is a syntax error while parsing the input LSON string.
+     */
     public LSONParser (
             final LSONReader reader,
             final Collection<LSONTypeAdapter<?>> typeAdapters)
-        throws IOException, LSONParseException
+            throws IOException, LSONParseException
     {
         this.reader = reader;
         this.typeAdapters = typeAdapters;
+
+        // Begin buffering.
+        this.reader.prepare();
 
         // Perform initial readNext.
         this.reader.readNext();
@@ -79,6 +91,11 @@ public class LSONParser
 
     private LSONValue readValue () throws IOException, LSONParseException
     {
+        return readValue(false);
+    }
+
+    private LSONValue readValue (final boolean flattenArrays) throws IOException, LSONParseException
+    {
         // Capture the initial character to determine what kind of value we are reading in. Either an object, array, or
         // just a regular word.
         final char current = this.reader.getCurrent();
@@ -90,13 +107,18 @@ public class LSONParser
 
             // Read LSON Array.
             case LSON_ARRAY_OPENER:
-                return readArray();
+                final char determinant = this.reader.readNext();
 
-            // Read LSON Structure.
-            case LSON_STRUCTURE_OPENER:
-                return readStructure();
+                // Parse table vs array.
+                if (determinant == LSON_TABLE_STARTER) {
+                    return readTable();
+                } else if (determinant == LSON_GRAPH_STARTER) {
+                    return readGraph();
+                } else {
+                    return readArray(flattenArrays);
+                }
 
-            // Handle end of read terminators when reading an empty file.
+                // Handle end of read terminators when reading an empty file.
             case NULL_BYTE:
             case END_OF_FILE:
             case END_OF_STRING:
@@ -108,7 +130,7 @@ public class LSONParser
         }
     }
 
-    private LSONObject readObject () throws IOException, LSONParseException
+    private LSONObject<LSONValue> readObject () throws IOException, LSONParseException
     {
         // Pop object opening character.
         this.reader.readNext();
@@ -122,42 +144,48 @@ public class LSONParser
         if (this.reader.getCurrent() == LSON_OBJECT_CLOSER) {
             // Pop closing tag and return empty object.
             this.reader.readNext();
-            return new LSONObject(lsonObj);
+            return new LSONObject<>(lsonObj);
         }
 
         // Keep track of the floating character (character after previous read operation) so we know when to stop
         // reading values into the object.
         char floating;
         do {
-            // Create the key word.
-            final LSONString key = (LSONString) readWord(true, true);
+            Collection<LSONString> keys;
+            if (this.reader.getCurrent() == LSON_ARRAY_OPENER) {
+                this.reader.readNext();
+                keys = new ArrayList<>();
+
+                for (final LSONValue key : readArray(true)) {
+                    if (key.isLSONString()) {
+                        keys.add(key.toLsonString());
+                    }
+                }
+            } else {
+                // Create the key word.
+                final LSONString key = (LSONString) readWord(true, true);
+                keys = Collections.singleton(key);
+            }
             removeWhitespace();
 
             final LSONValue value;
 
-            // If the next token after the key is not a key value separator, it might be a structure opening tag.
-            if (this.reader.getCurrent() == LSON_STRUCTURE_OPENER) {
-                // Read structure and continue.
-                value = readStructure();
-                removeWhitespace();
+            // Pop key value separator token.
+            expect(KEY_VALUE_SEPARATOR, "Expected a " + (char) KEY_VALUE_SEPARATOR
+                    + " to separate key, value pairs, got " + this.reader.getCurrent());
+            this.reader.readNext();
 
-                lsonObj.put(key, value);
-            } else {
-                // Pop key value separator token.
-                expect(KEY_VALUE_SEPARATOR, "Expected a " + (char) KEY_VALUE_SEPARATOR
-                        + " to separate key, value pairs");
-                this.reader.readNext();
+            if (keys.isEmpty()) {
+                throw new LSONParseException("Cannot create LSON object where a key is null", getLocation());
+            }
 
-                if (key == null) {
-                    throw new LSONParseException("Cannot create LSON object where a key is null", getLocation());
-                }
+            // Remove all whitespace and parse value.
+            removeWhitespace();
+            value = readValue();
+            removeWhitespace();
 
-                // Remove all whitespace and parse value.
-                removeWhitespace();
-                value = readValue();
-                removeWhitespace();
-
-                // Store key value pair in lson object.
+            // Store key(s) value pair in lson object.
+            for (final LSONString key : keys) {
                 lsonObj.put(key, value);
             }
 
@@ -173,123 +201,33 @@ public class LSONParser
         expect(LSON_OBJECT_CLOSER, "Expected " + LSON_OBJECT_CLOSER + " for object terminator");
         this.reader.readNext();
 
-        return new LSONObject(lsonObj);
+        return new LSONObject<>(lsonObj);
     }
 
-    private LSONStructure readStructure () throws IOException, LSONParseException
+    private LSONArray<LSONValue> readArray (final boolean flatten) throws IOException, LSONParseException
     {
-        // Pop structure opening character.
-        this.reader.readNext();
-        final ArrayList<LSONObject<?>> structure = new ArrayList<>();
-        removeWhitespace();
-
-        // Load all of the structures keys in.
-        final ArrayList<LSONString> structureKeys = new ArrayList<>();
-        char floating;
-        do {
-            // Note that keys can be any value type.
-            final LSONWord word = readWord(false, true);
-
-            if (!(word instanceof LSONString)) {
-                throw new LSONParseException("Parsed word is not a string", getLocation());
-            }
-
-            structureKeys.add((LSONString) word);
-
-            // Read whitespace, re-determine floating character and check to see if the structure header is finished.
-            removeWhitespace();
-            floating = this.reader.getCurrent();
-        } while (floating != LSON_STRUCTURE_CLOSER);
-
-        // Pop structure header tag closing character.
-        this.reader.readNext();
-        removeWhitespace();
-
-        // Expect a key value separator.
-        expect(KEY_VALUE_SEPARATOR, "Expected a " + (char) KEY_VALUE_SEPARATOR
-                + " to separate structure header and body");
-        this.reader.readNext();
-        removeWhitespace();
-
-        // Expect an array opening tag.
-        expect(LSON_ARRAY_OPENER, "Expected an " + (char) LSON_ARRAY_OPENER + " for structure opening");
-        this.reader.readNext();
-        removeWhitespace();
-
-        // Expect either the opening of a structure body fragment or the end of an array (no structure components).
-        expectAny("Invalid token, expected either " + (char) LSON_STRUCTURE_OPENER
-                        + " or " + (char) LSON_ARRAY_CLOSER + " token",
-                LSON_STRUCTURE_OPENER,
-                LSON_ARRAY_CLOSER);
-
-        char current = this.reader.getCurrent();
-        if (current != LSON_ARRAY_CLOSER) {
-            // Load structure up.
-            do {
-                final ArrayList<LSONValue> lsonStructureComponent = new ArrayList<>();
-
-                // Pop structure component opening tag.
-                this.reader.readNext();
-                removeWhitespace();
-
-                do {
-                    // Read all structure body fragments for the structure body piece.
-                    lsonStructureComponent.add(readValue());
-                    removeWhitespace();
-
-                    // Stop reading body fragments when the body piece is finished.
-                    floating = this.reader.getCurrent();
-                } while (floating != LSON_STRUCTURE_CLOSER);
-
-                // Pop structure component closing tag.
-                this.reader.readNext();
-                removeWhitespace();
-
-                // Create a component map for the key (structure header) and value (structure body piece).
-                final Map<LSONString, LSONValue> componentMap = new HashMap<>();
-
-                // Map all key value pairs.
-                for (int idx = 0; idx < structureKeys.size(); ++idx) {
-                    // If the body piece has less fragments than the header, stop loading more from the body piece.
-                    if (lsonStructureComponent.size() <= idx) {
-                        break;
-                    }
-
-                    final LSONString key = structureKeys.get(idx);
-                    final LSONValue value = lsonStructureComponent.get(idx);
-
-                    componentMap.put(key, value);
-                }
-
-                // Keep reading body pieces until the array closing tag is present.
-                // This marks the end of all body pieces.
-                structure.add(new LSONObject(componentMap));
-                floating = this.reader.getCurrent();
-            } while (floating != LSON_ARRAY_CLOSER);
-        }
-
-        // Pop structure closing character.
-        this.reader.readNext();
-        return new LSONStructure(structure, structureKeys);
-    }
-
-    private LSONArray readArray () throws IOException, LSONParseException
-    {
-        // Pop object opening character.
-        this.reader.readNext();
         final ArrayList<LSONValue> array = new ArrayList<>();
         removeWhitespace();
 
         if (this.reader.getCurrent() == LSON_ARRAY_CLOSER) {
             // Pop closing tag and return empty object.
             this.reader.readNext();
-            return new LSONArray(array);
+            return new LSONArray<>(array);
         }
 
         char floating;
         do {
             // Keep reading values into the array.
-            array.add(readValue());
+            final LSONValue value = readValue(true);
+
+            if (flatten && value != null && value.isLSONArray()) {
+                for (final LSONValue v : ((LSONArray<LSONValue>) value)) {
+                    array.add(v);
+                }
+            } else {
+                array.add(value);
+            }
+
             removeWhitespace();
 
             // Read values until there is an array closing tag.
@@ -301,7 +239,208 @@ public class LSONParser
         expect(LSON_ARRAY_CLOSER, "Expected " + (char) LSON_ARRAY_CLOSER + " for array terminator.");
         this.reader.readNext();
 
-        return new LSONArray(array);
+        return new LSONArray<>(array);
+    }
+
+    private LSONTable readTable () throws IOException, LSONParseException
+    {
+        // Remove the hash tag table opener.
+        this.reader.readNext();
+        removeWhitespace();
+
+        final ArrayList<LSONWord> header = new ArrayList<>();
+        boolean headerHasArrayOpener = false;
+
+        if (this.reader.getCurrent() == LSON_ARRAY_OPENER) {
+            this.reader.readNext();
+            headerHasArrayOpener = true;
+            removeWhitespace();
+        }
+
+        char floating;
+        do {
+            header.add(readWord(true, true));
+            removeWhitespace();
+
+            // Read values until there is an array closing tag if array opened header, or colon.
+            floating = this.reader.getCurrent();
+        } while (headerHasArrayOpener ? floating != LSON_ARRAY_CLOSER : floating != LSON_TABLE_HEADER_END);
+
+        if (headerHasArrayOpener) {
+            this.reader.readNext();
+            removeWhitespace();
+        }
+
+        expect(LSON_TABLE_HEADER_END, "Expected a table header row separator, got " + this.reader.getCurrent());
+        this.reader.readNext();
+        removeWhitespace();
+
+        final ArrayList<ArrayList<LSONValue>> rowData = new ArrayList<>();
+
+        do {
+            if (this.reader.getCurrent() == LSON_TABLE_STARTER && this.reader.peekNext() == LSON_ARRAY_CLOSER) {
+                this.reader.readNext();
+                this.reader.readNext();
+                return new LSONTable(header, new ArrayList[0]);
+            }
+
+            if (headerHasArrayOpener) {
+                expect(LSON_ARRAY_OPENER, "Expected " + LSON_ARRAY_OPENER + ", got " + this.reader.getCurrent());
+                this.reader.readNext();
+                removeWhitespace();
+            }
+
+            final ArrayList<LSONValue> row = new ArrayList<>();
+            for (int i = 0; i < header.size(); ++i) {
+                row.add(readValue());
+                removeWhitespace();
+            }
+            rowData.add(row);
+
+            if (headerHasArrayOpener) {
+                expect(LSON_ARRAY_CLOSER, "Expected " + LSON_ARRAY_CLOSER + ", got " + this.reader.getCurrent());
+                this.reader.readNext();
+                removeWhitespace();
+            }
+
+            floating = this.reader.getCurrent();
+        } while (floating != LSON_TABLE_STARTER && this.reader.peekNext() != LSON_ARRAY_CLOSER);
+
+        this.reader.readNext();
+        expect(LSON_ARRAY_CLOSER, "Expected table to end with " + LSON_TABLE_STARTER + LSON_ARRAY_CLOSER
+                + ", got " + this.reader.getCurrent());
+        this.reader.readNext();
+
+        final LSONTable table = new LSONTable(header, rowData.toArray(new ArrayList[rowData.size()]));
+        return table;
+    }
+
+    private LSONGraph readGraph () throws IOException, LSONParseException
+    {
+        // Remove percentage from graph opening statement
+        this.reader.readNext();
+        removeWhitespace();
+
+        LSONValue[] nodesByIndex = null;
+        Map<String, LSONValue> nodesByName = null;
+
+        if (this.reader.getCurrent() == LSON_ARRAY_OPENER) {
+            // Arrays are special since they have a determinant for tables and graphs, so we have to skip the opener
+            // for the read array function to read properly. If not, it would assume there is an array embedded in the
+            // array we're trying to read.
+            this.reader.readNext();
+
+            final LSONArray<LSONValue> array = readArray(false);
+            nodesByIndex = new LSONValue[array.size()];
+
+            for (int i = 0; i < nodesByIndex.length; ++i) {
+                nodesByIndex[i] = array.get(i);
+            }
+        } else if (this.reader.getCurrent() == LSON_OBJECT_OPENER) {
+            final LSONObject<LSONValue> map = readObject();
+            nodesByName = new LinkedHashMap<>();
+
+            for (final LSONString key : map.keySet()) {
+                nodesByName.put(key.getWord(), map.get(key));
+            }
+        } else {
+            final int nodes = readInteger();
+            nodesByIndex = new LSONValue[nodes];
+        }
+
+        final ArrayList<LSONVertex> vertices = new ArrayList<>();
+        final Map<String, Integer> nameToVertexIdMap = new HashMap<>();
+
+        if (nodesByIndex != null) {
+            for (int i = 0; i < nodesByIndex.length; ++i) {
+                vertices.add(new LSONVertex(i, null, nodesByIndex[i]));
+            }
+        } else {
+            int index = 0;
+            for (final Map.Entry<String, LSONValue> entry : nodesByName.entrySet()) {
+                vertices.add(new LSONVertex(index, entry.getKey(), entry.getValue()));
+                nameToVertexIdMap.put(entry.getKey(), index);
+                ++index;
+            }
+        }
+
+        removeWhitespace();
+        final ArrayList<LSONEdge> edges = new ArrayList<>();
+
+        expectAny("Expected either { or [ to open edge data, got " + this.reader.getCurrent(),
+                LSON_ARRAY_OPENER, LSON_OBJECT_OPENER);
+
+        boolean nodesWithData = this.reader.getCurrent() == LSON_OBJECT_OPENER;
+        this.reader.readNext();
+        removeWhitespace();
+
+        do {
+            final LSONVertex v1, v2;
+            final int direction;
+
+            if (nodesByIndex != null) {
+                v1 = vertices.get(readInteger());
+                removeWhitespace();
+
+                direction = LSONTokenUtils.getEdgeDirectionality(this.reader.getCurrent());
+                this.reader.readNext();
+                removeWhitespace();
+
+                v2 = vertices.get(readInteger());
+                removeWhitespace();
+            } else {
+                v1 = vertices.get(nameToVertexIdMap.get(readWord(true, true).getWord()));
+                removeWhitespace();
+
+                direction = LSONTokenUtils.getEdgeDirectionality(this.reader.getCurrent());
+                this.reader.readNext();
+                removeWhitespace();
+
+                v2 = vertices.get(nameToVertexIdMap.get(readWord(true, true).getWord()));
+                removeWhitespace();
+            }
+
+            final LSONValue data;
+            if (nodesWithData) {
+                expect(KEY_VALUE_SEPARATOR, "Expected a key value separator :, got " + this.reader.getCurrent());
+
+                this.reader.readNext();
+                removeWhitespace();
+
+                data = readValue();
+                removeWhitespace();
+            } else {
+                data = null;
+            }
+
+            final LSONEdge edge;
+            switch (direction) {
+                case GRAPH_UNDIRECTED:
+                    edge = new LSONEdge(v1, v2, false, data);
+                    break;
+                case GRAPH_RIGHT_DIRECTED:
+                    edge = new LSONEdge(v1, v2, true, data);
+                    break;
+                default:
+                    edge = new LSONEdge(v2, v1, true, data);
+                    break;
+            }
+
+            edges.add(edge);
+            removeWhitespace();
+        } while (nodesWithData ?
+                this.reader.getCurrent() != LSON_OBJECT_CLOSER
+                : this.reader.getCurrent() != LSON_ARRAY_CLOSER);
+        this.reader.readNext();
+
+        removeWhitespace();
+        expect(LSON_GRAPH_STARTER, "Expected a " + (char) LSON_GRAPH_STARTER + " to close a graph, got "
+                + this.reader.getCurrent());
+
+        this.reader.readNext();
+        this.reader.readNext();
+
+        return new LSONGraph(vertices, edges);
     }
 
     private LSONWord readWord (final boolean isObjectKey, final boolean forceString)
@@ -318,7 +457,6 @@ public class LSONParser
             return null;
         }
 
-        // Create a non-terminating loop to allow for string concatenation later on.
         while (true) {
             // Check to see if the word is delimited and save opening delimiter.
             char stringOpener = NULL_BYTE;
@@ -334,7 +472,7 @@ public class LSONParser
                 if (this.reader.isFinished()) {
                     // Substring, as isFinished returns true after end of file has been read in.
                     // We capture the entire string minus the end of file character at the end.
-                    return buildWord(capture.substring(0, capture.length() -1), promotedToString
+                    return buildWord(capture.toString(), promotedToString
                             || forceString || isObjectKey);
                 }
 
@@ -349,13 +487,13 @@ public class LSONParser
                         break;
                     }
 
-                    // If we are closing something, break out of parsing this word.
-                    else if (LSONTokenUtils.isLSONClosingReservedToken(current)) {
+                    // If this is a key and forced string and we catch graph reserved tokens, break out.
+                    if ((isObjectKey && forceString) && LSONTokenUtils.getEdgeDirectionality(current) != -1) {
                         break;
                     }
 
-                    // If we open a structure, our word is done parsing so we can continue to build the structure.
-                    else if (current == LSON_STRUCTURE_OPENER) {
+                    // If we are closing something, break out of parsing this word.
+                    else if (LSONTokenUtils.isLSONClosingReservedToken(current)) {
                         break;
                     }
                 }
@@ -400,8 +538,23 @@ public class LSONParser
         return buildWord(capture.toString(), promotedToString || forceString || isObjectKey);
     }
 
+    private int readInteger () throws IOException, LSONParseException
+    {
+        int number = 0;
+
+        do {
+            expectAny("Expected a digit but got " + this.reader.getCurrent(), NUMBERS);
+            number = (10 * number) + (this.reader.getCurrent() - '0');
+            this.reader.readNext();
+        } while (isNumber(this.reader.getCurrent()));
+
+        return number;
+    }
+
+    @SuppressWarnings("unchecked")
     private LSONWord buildWord (final String string, final boolean promotedToString)
     {
+        // Can't build a word from a forced string.
         if (promotedToString) {
             return new LSONString(string);
         }
@@ -449,7 +602,7 @@ public class LSONParser
 
     private LSONFileLocation getLocation ()
     {
-        return new LSONFileLocation(this.reader.getOffset(), this.reader.getLine(), this.reader.getColumn());
+        return new LSONFileLocation(this.reader.getLine(), this.reader.getColumn());
     }
 
     private void expect (final int character, final String onError) throws LSONParseException

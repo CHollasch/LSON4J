@@ -23,7 +23,9 @@
 
 package net.hollasch.lson4j.type;
 
+import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * @author Connor Hollasch
@@ -43,10 +45,79 @@ public class LSONObject<V extends LSONValue> extends LSONValue
         return this.map;
     }
 
+    public V get (final String key)
+    {
+        return get(new LSONString(key));
+    }
+
+    public V get (final LSONString key)
+    {
+        return this.map.get(key);
+    }
+
+    public Set<LSONString> keySet ()
+    {
+        return this.map.keySet();
+    }
+
+    public Collection<V> values ()
+    {
+        return this.map.values();
+    }
+
+    public Set<Map.Entry<LSONString, V>> entrySet ()
+    {
+        return this.map.entrySet();
+    }
+
+    public V put (final String key, final V value)
+    {
+        return this.map.put(new LSONString(key), value);
+    }
+
+    public V put (final LSONString key, final V value)
+    {
+        return this.map.put(key, value);
+    }
+
+    public int size ()
+    {
+        return this.map.size();
+    }
+
+    public boolean isEmpty ()
+    {
+        return this.map.isEmpty();
+    }
+
     @Override
     public boolean isLSONObject ()
     {
         return true;
+    }
+
+    @Override
+    public boolean equals (final Object obj)
+    {
+        if (obj == null) {
+            return false;
+        }
+
+        if (!(obj instanceof LSONObject)) {
+            if (!(obj instanceof Map)) {
+                return false;
+            }
+
+            return obj.equals(this.map);
+        }
+
+        return ((LSONObject) obj).map.equals(this.map);
+    }
+
+    @Override
+    public int hashCode ()
+    {
+        return this.map.hashCode();
     }
 
     @Override

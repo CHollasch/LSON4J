@@ -7,6 +7,7 @@
     <groupId>net.hollasch.lson4j</groupId>
     <artifactId>LSON4J</artifactId>
     <version>1.0-SNAPSHOT</version>
+
     <build>
         <plugins>
             <plugin>

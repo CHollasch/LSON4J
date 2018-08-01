@@ -13,4 +13,5 @@ hs_err_pid*
 
 *.db
 .idea/
+target/
 *.iml

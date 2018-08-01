@@ -29,20 +29,13 @@ package net.hollasch.lson4j;
  */
 public class LSONFileLocation
 {
-    private final int offset;
     private final int line;
     private final int column;
 
-    public LSONFileLocation (final int offset, final int line, final int column)
+    public LSONFileLocation (final int line, final int column)
     {
-        this.offset = offset;
         this.line = line;
         this.column = column;
-    }
-
-    public int getOffset ()
-    {
-        return this.offset;
     }
 
     public int getLine ()

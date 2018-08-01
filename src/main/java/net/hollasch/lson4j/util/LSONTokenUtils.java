@@ -103,8 +103,31 @@ public class LSONTokenUtils
     public static final int LSON_ARRAY_OPENER = '[';
     public static final int LSON_ARRAY_CLOSER = ']';
 
-    public static final int LSON_STRUCTURE_OPENER = '<';
-    public static final int LSON_STRUCTURE_CLOSER = '>';
+    public static final int LSON_TABLE_STARTER = '#';
+    public static final int LSON_TABLE_HEADER_END = ':';
+
+    //==================================================================================================================
+    // LSON Graph Characters
+    //==================================================================================================================
+
+    public static final int LSON_GRAPH_STARTER = '%';
+
+    public static final int GRAPH_UNDIRECTED_HYPHEN = '-';
+    public static final int GRAPH_UNDIRECTED_LR_ARROW = 0x2194;
+    public static final int GRAPH_RIGHT_DIRECTED_GREATER_THAN = '>';
+    public static final int GRAPH_RIGHT_DIRECTED_ARROW = 0x2192;
+    public static final int GRAPH_LEFT_DIRECTED_LESS_THAN = '<';
+    public static final int GRAPH_LEFT_DIRECTED_ARROW = 0x2190;
+
+    public static final int GRAPH_UNDIRECTED = 0;
+    public static final int GRAPH_RIGHT_DIRECTED = 1;
+    public static final int GRAPH_LEFT_DIRECTED = 2;
+
+    //==================================================================================================================
+    // LSON Etc
+    //==================================================================================================================
+
+    public static final int[] NUMBERS = {'1', '2', '3', '4', '5', '6', '7', '8', '9', '0'};
 
     //==================================================================================================================
 
@@ -157,7 +180,6 @@ public class LSONTokenUtils
         switch (token) {
             case LSON_OBJECT_CLOSER:
             case LSON_ARRAY_CLOSER:
-            case LSON_STRUCTURE_CLOSER:
                 return true;
             default:
                 return false;
@@ -174,6 +196,23 @@ public class LSONTokenUtils
                 return true;
             default:
                 return false;
+        }
+    }
+
+    public static int getEdgeDirectionality (final int character)
+    {
+        switch (character) {
+            case GRAPH_UNDIRECTED_HYPHEN:
+            case GRAPH_UNDIRECTED_LR_ARROW:
+                return GRAPH_UNDIRECTED;
+            case GRAPH_LEFT_DIRECTED_ARROW:
+            case GRAPH_LEFT_DIRECTED_LESS_THAN:
+                return GRAPH_LEFT_DIRECTED;
+            case GRAPH_RIGHT_DIRECTED_ARROW:
+            case GRAPH_RIGHT_DIRECTED_GREATER_THAN:
+                return GRAPH_RIGHT_DIRECTED;
+            default:
+                return -1;
         }
     }
 
@@ -204,6 +243,25 @@ public class LSONTokenUtils
                 return true;
             default:
                 return isNewline(character);
+        }
+    }
+
+    public static boolean isNumber (final int character)
+    {
+        switch (character) {
+            case '0':
+            case '1':
+            case '2':
+            case '3':
+            case '4':
+            case '5':
+            case '6':
+            case '7':
+            case '8':
+            case '9':
+                return true;
+            default:
+                return false;
         }
     }
 }

@@ -23,15 +23,14 @@
 
 package net.hollasch.lson4j;
 
+import net.hollasch.lson4j.type.LSONObject;
+import net.hollasch.lson4j.type.LSONTable;
 import net.hollasch.lson4j.type.LSONValue;
-import net.hollasch.lson4j.type.provided.LSONBooleanTypeAdapter;
-import net.hollasch.lson4j.type.provided.LSONTypeAdapters;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.StringReader;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.Arrays;
 
 /**
  * @author Connor Hollasch
@@ -43,7 +42,7 @@ public class LSONTest
 
     public static void main (final String... args) throws IOException, LSONParseException
     {
-        doParseTest("");
+        /*doParseTest("");
         doParseTest("// Nothing but a comment");
         doParseTest("testString");
         doParseTest("0");
@@ -51,11 +50,38 @@ public class LSONTest
         doParseTest("null");
         doParseTest("[ ]");
         doParseTest("{ }");
-        doParseTest("<a b c>:[<A B C>]");
         doParseTest("{Key:Value;Key2:Value2}");
         doParseTest("{Key:\"Value Line 1\"\n + \" \" + \"Value Line 2\"}");
         doParseTest("{\"true\":true}");
         doParseTest("{numberTest:[1,1.0,.5,-12,0xFF]}");
+        doParseTest("{key:\"A\" + \"B\"}");
+        doParseTest("[# key1 key2 key3: #]");*/
+
+        /*final LSONObject o = (LSONObject) LSON.parse(new StringReader("{\n" +
+                "    id: base01\n" +
+                "    popup: {\n" +
+                "        menus: {\n" +
+                "\n" +
+                "            // Table (2 columns, 3 rows) with optional brackets and semicolon separators:\n" +
+                "            File: [#\n" +
+                "                [ Value  ; Action       ]\n" +
+                "                :\n" +
+                "                [ New    ; [# hi bye : 1 {key:[# a b c : d [1,2,3] f #]} #]]\n" +
+                "                [ Open   ; OpenDoc      ]\n" +
+                "                [ Close  ; CloseDoc     ]\n" +
+                "            #]\n" +
+                "\n" +
+                "            // Table (2 columns, 3 rows) without optional brackets, with optiona semi-colons:\n" +
+                "            Edit: [# value,action: Copy,CopySelection; Cut,CutSelection; Paste,PasteItem #]\n" +
+                "        }\n" +
+                "    }\n" +
+                "}"));
+
+        System.out.println(o.get("popup").toObject().get("menus").toObject().get("File").toTable());*/
+        
+        final LSONValue o = LSON.parse(new FileInputStream(new File("test.lson")));
+
+        System.out.println(o);
     }
 
     private static void doParseTest (final String rawData) throws IOException, LSONParseException
@@ -64,7 +90,7 @@ public class LSONTest
         System.out.println(header);
         System.out.println("Raw data: " + rawData);
 
-        final LSONValue value = LSON.parseWithAdapters(rawData, LSONTypeAdapters.BOOLEAN, LSONTypeAdapters.NUMBER);
+        final LSONValue value = LSON.parse(rawData);
 
         System.out.println("Parses into: " + value);
 

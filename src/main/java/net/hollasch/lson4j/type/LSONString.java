@@ -45,4 +45,24 @@ public class LSONString extends LSONWord
     {
         return "\"" + getWord() + "\"";
     }
+
+    @Override
+    public boolean equals (final Object obj)
+    {
+        if (obj == null) {
+            return false;
+        }
+
+        if (obj instanceof String) {
+            return obj.equals(getWord());
+        }
+
+        return ((LSONString) obj).getWord().equals(getWord());
+    }
+
+    @Override
+    public int hashCode ()
+    {
+        return getWord().hashCode();
+    }
 }

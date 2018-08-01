@@ -25,6 +25,7 @@ package net.hollasch.lson4j.type;
 
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 /**
  * @author Connor Hollasch
@@ -74,6 +75,30 @@ public class LSONArray<T extends LSONValue> extends LSONValue implements Iterabl
     public Iterator<T> iterator ()
     {
         return this.array.iterator();
+    }
+
+    @Override
+    public boolean equals (final Object obj)
+    {
+        if (obj == null) {
+            return false;
+        }
+
+        if (!(obj instanceof LSONArray)) {
+            if (!(obj instanceof List)) {
+                return false;
+            }
+
+            return obj.equals(this.array);
+        }
+
+        return ((LSONArray) obj).array.equals(this.array);
+    }
+
+    @Override
+    public int hashCode ()
+    {
+        return this.array.hashCode();
     }
 
     @Override
